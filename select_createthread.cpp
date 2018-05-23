@@ -231,7 +231,6 @@ DWORD WINAPI CreateReciveThread( LPVOID lpParameter )
 	memset(apikey,0,36);
 	memset(apisecret,0,36);
 	int nRecv = recv( client, temp, 1024 * 500, 0 );
-	//printf( "nrecv=%d\n", nRecv );
 	if ( nRecv > 0 )
 	{
 		memcpy( &recdata.head, temp, sizeof(STR_SOC) );
@@ -288,19 +287,19 @@ DWORD WINAPI CreateReciveThread( LPVOID lpParameter )
 				CURLFORM_END );
 
 			curl_formadd( &formpost, &lastptr,
-			CURLFORM_COPYNAME, "image_file",
-			CURLFORM_BUFFER, "imgdata",
-			CURLFORM_BUFFERPTR, recdata.picdata1,
-			CURLFORM_BUFFERLENGTH, recdata.head.piclen[0],
-			CURLFORM_CONTENTTYPE, "multipart/form-data",
-			CURLFORM_END );
+				CURLFORM_COPYNAME, "image_file",
+				CURLFORM_BUFFER, "imgdata",
+				CURLFORM_BUFFERPTR, recdata.picdata1,
+				CURLFORM_BUFFERLENGTH, recdata.head.piclen[0],
+				CURLFORM_CONTENTTYPE, "multipart/form-data",
+				CURLFORM_END );
 
-				curl_formadd(&formpost, &lastptr,
+			curl_formadd(&formpost, &lastptr,
 				CURLFORM_COPYNAME, "return_landmark",
 				CURLFORM_COPYCONTENTS,"1",
 				CURLFORM_END );
 
-				curl_formadd(&formpost, &lastptr,
+			curl_formadd(&formpost, &lastptr,
 				CURLFORM_COPYNAME, "return_attributes",
 				CURLFORM_COPYCONTENTS,"gender,age,smile,glass,headpose,blur,eyestatus,emotion,facequality,ethnicity,beauty,mouthstatus,eyegaze,skinstatus",
 				CURLFORM_END );
@@ -316,68 +315,77 @@ DWORD WINAPI CreateReciveThread( LPVOID lpParameter )
 			curl_easy_setopt( curl, CURLOPT_ERRORBUFFER, error );
 			res = curl_easy_perform( curl );
 			if ( res != CURLE_OK )
-			printf( "%s\n", error );
+				printf( "%s\n", error );
 			curl_easy_cleanup(curl);
-		   SetSelectStr(username,recdata.head.apitype,XML_FILE_PATH);
+			SetSelectStr(username,recdata.head.apitype,XML_FILE_PATH);
 
 			if ( strstr( face_stoken, "error_message" ) )
 			{
-			strcpy( str_msg.head.reqtype, recdata.head.reqtype );
-			str_msg.head.iresult	= -1;
-			str_msg.head.msglen	= strlen( face_stoken );
-			str_msg.content		= new char[strlen( face_stoken )];
-			memcpy( str_msg.content, face_stoken, strlen( face_stoken ) );
-			buf = new char[sizeof(STR_MSG_HEAD) + strlen( face_stoken )];
-			memset( buf, 0, sizeof(STR_MSG_HEAD) + strlen( face_stoken ) );
-			memcpy( buf, &str_msg.head, sizeof(STR_MSG_HEAD) );
-			memcpy( buf + sizeof(STR_MSG_HEAD), str_msg.content, strlen( face_stoken ) );
-			send( client, buf, sizeof(STR_MSG_HEAD) + strlen( face_stoken ), 0 );
+				strcpy( str_msg.head.reqtype, recdata.head.reqtype );
+				str_msg.head.iresult	= -1;
+				str_msg.head.msglen	= strlen( face_stoken );
+				str_msg.content		= new char[strlen( face_stoken )];
+				memcpy( str_msg.content, face_stoken, strlen( face_stoken ) );
+				buf = new char[sizeof(STR_MSG_HEAD) + strlen( face_stoken )];
+				memset( buf, 0, sizeof(STR_MSG_HEAD) + strlen( face_stoken ) );
+				memcpy( buf, &str_msg.head, sizeof(STR_MSG_HEAD) );
+				memcpy( buf + sizeof(STR_MSG_HEAD), str_msg.content, strlen( face_stoken ) );
+				send( client, buf, sizeof(STR_MSG_HEAD) + strlen( face_stoken ), 0 );
 			}else  {
-			//添加到faceset_tokens集合中;
-		    GetSelectStr(apikey,apisecret,recdata.head.apitype,username,XML_FILE_PATH);
-			printf("%s\n",username);
-			curl_formadd( &addpost,
-			&lastaddptr,
-			CURLFORM_COPYNAME, "outer_id",
-			CURLFORM_COPYCONTENTS, "OuterID",
-			CURLFORM_END );
-			curl_formadd( &addpost,
-			&lastaddptr,
-			CURLFORM_COPYNAME, "face_tokens",
-			CURLFORM_COPYCONTENTS, face_stoken,
-			CURLFORM_END );
-			curl = curl_easy_init();
-			curl_easy_setopt( curl, CURLOPT_POST, 1 );
-			curl_easy_setopt( curl, CURLOPT_URL, apistr );
-			curl_easy_setopt( curl, CURLOPT_VERBOSE, 0 );
-			curl_easy_setopt( curl, CURLOPT_SSL_VERIFYPEER, false );
-			curl_easy_setopt( curl, CURLOPT_HTTPPOST, addpost );
-			curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, req_add );
-			curl_easy_setopt( curl, CURLOPT_WRITEDATA, &fs_add_msg );
-			curl_easy_setopt( curl, CURLOPT_ERRORBUFFER, error );
-			res = curl_easy_perform( curl );
-			if ( res != CURLE_OK )
-			printf( "%s\n", error );
-			if ( strstr( fs_add_msg, "error_message" ) )
-			{
-			strcpy( str_msg.head.reqtype, recdata.head.reqtype );
-			str_msg.head.iresult = -2;
-			}else  {
-			strcpy( str_msg.head.reqtype, recdata.head.reqtype );
-			str_msg.head.iresult = 0;
-			}
-			str_msg.head.msglen	= strlen( fs_add_msg );
-			str_msg.content		= new char[strlen( fs_add_msg )];
-			memcpy( str_msg.content, fs_add_msg, strlen( fs_add_msg ) );
-			buf = new char[sizeof(STR_MSG_HEAD) + strlen( fs_add_msg )];
-			memset( buf, 0, sizeof(STR_MSG_HEAD) + strlen( fs_add_msg ) );
-			memcpy( buf, &str_msg.head, sizeof(STR_MSG_HEAD) );
-			memcpy( buf + sizeof(STR_MSG_HEAD), str_msg.content, strlen( fs_add_msg ) );
-			send( client, buf, sizeof(STR_MSG_HEAD) + strlen( fs_add_msg ), 0 );
-			curl_formfree(formpost);
-			curl_formfree(addpost);
-			curl_easy_cleanup(curl);
-			SetSelectStr(username,recdata.head.apitype,XML_FILE_PATH);
+				//添加到faceset_tokens集合中;
+				GetSelectStr(apikey,apisecret,recdata.head.apitype,username,XML_FILE_PATH);
+
+				curl_formadd( &addpost,&lastaddptr,
+					CURLFORM_COPYNAME, "api_key",
+					CURLFORM_COPYCONTENTS, apikey,
+					CURLFORM_END );
+
+				curl_formadd( &addpost,&lastaddptr,
+					CURLFORM_COPYNAME, "api_secret",
+					CURLFORM_COPYCONTENTS,apisecret,
+					CURLFORM_END );
+
+				curl_formadd( &addpost,&lastaddptr,
+					CURLFORM_COPYNAME, "outer_id",
+					CURLFORM_COPYCONTENTS, "OuterID",
+					CURLFORM_END );
+
+				curl_formadd( &addpost,&lastaddptr,
+					CURLFORM_COPYNAME, "face_tokens",
+					CURLFORM_COPYCONTENTS, face_stoken,
+					CURLFORM_END );
+				curl = curl_easy_init();
+				curl_easy_setopt( curl, CURLOPT_POST, 1 );
+				curl_easy_setopt( curl, CURLOPT_URL, API_FS_ADDFACE(recdata.head.apitype) );
+				curl_easy_setopt( curl, CURLOPT_VERBOSE, 0 );
+				curl_easy_setopt( curl, CURLOPT_SSL_VERIFYPEER, false );
+				curl_easy_setopt( curl, CURLOPT_HTTPPOST, addpost );
+				curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, req_add );
+				curl_easy_setopt( curl, CURLOPT_WRITEDATA, &fs_add_msg );
+				curl_easy_setopt( curl, CURLOPT_ERRORBUFFER, error );
+				res = curl_easy_perform( curl );
+				if ( res != CURLE_OK )
+					printf( "%s\n", error );
+				if ( strstr( fs_add_msg, "error_message" ) )
+				{
+					strcpy( str_msg.head.reqtype, recdata.head.reqtype );
+					str_msg.head.iresult = -2;
+				}else  {
+					strcpy( str_msg.head.reqtype, recdata.head.reqtype );
+					str_msg.head.iresult = 0;
+				}
+				str_msg.head.msglen	= strlen( fs_add_msg );
+				str_msg.content		= new char[strlen( fs_add_msg )];
+				memcpy( str_msg.content, fs_add_msg, strlen( fs_add_msg ) );
+				buf = new char[sizeof(STR_MSG_HEAD) + strlen( fs_add_msg )];
+				memset( buf, 0, sizeof(STR_MSG_HEAD) + strlen( fs_add_msg ) );
+				memcpy( buf, &str_msg.head, sizeof(STR_MSG_HEAD) );
+				memcpy( buf + sizeof(STR_MSG_HEAD), str_msg.content, strlen( fs_add_msg ) );
+				send( client, buf, sizeof(STR_MSG_HEAD) + strlen( fs_add_msg ), 0 );
+				curl_formfree(formpost);
+				curl_formfree(addpost);
+				curl_easy_cleanup(curl);
+				SetSelectStr(username,recdata.head.apitype,XML_FILE_PATH);
 			}
 		}else if ( strcmp( recdata.head.reqtype, "c81e728d9d4c2f636f067f89cc14862c" ) == 0 )
 		{
