@@ -1,0 +1,9 @@
+int main()
+{
+
+printf("hello\tworld\n");
+getch();
+system("pause");
+return 0;
+
+}
